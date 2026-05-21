@@ -8,6 +8,9 @@ import '../../core/widgets/meal_card.dart';
 import '../../providers/meal_api_provider.dart';
 import 'meal_detail_screen.dart';
 
+import '../../providers/auth_provider.dart';
+import '../../providers/favorite_provider.dart';
+
 class DiscoverMealsScreen extends StatefulWidget {
   const DiscoverMealsScreen({super.key});
 
@@ -164,12 +167,36 @@ class _DiscoverMealsScreenState extends State<DiscoverMealsScreen> {
                     return MealCard(
                       meal: meal,
                       onTap: () => _openMealDetails(meal.id),
-                      onFavoriteTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Favorites will be connected in the next milestone.',
+                      onFavoriteTap: () async {
+                        final userId = context.read<AppAuthProvider>().firebaseUser?.uid;
+
+                        if (userId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please login first.'),
+                              backgroundColor: AppColors.errorRed,
                             ),
+                          );
+                          return;
+                        }
+
+                        final success = await context.read<FavoriteProvider>().saveFavorite(
+                          userId: userId,
+                          meal: meal,
+                        );
+
+                        if (!mounted) return;
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              success
+                                  ? 'Saved to favorites.'
+                                  : context.read<FavoriteProvider>().errorMessage ??
+                                  'Unable to save favorite.',
+                            ),
+                            backgroundColor:
+                            success ? AppColors.primaryGreen : AppColors.errorRed,
                           ),
                         );
                       },

@@ -5,8 +5,10 @@ import 'package:provider/provider.dart';
 import 'app.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/favorite_provider.dart';
 import 'providers/meal_api_provider.dart';
 import 'services/auth_service.dart';
+import 'services/favorite_service.dart';
 import 'services/meal_api_service.dart';
 import 'services/user_service.dart';
 
@@ -29,6 +31,11 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => MealApiProvider(
             mealApiService: MealApiService(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => FavoriteProvider(
+            favoriteService: FavoriteService(),
           ),
         ),
       ],

@@ -9,6 +9,9 @@ import '../../core/widgets/loading_widget.dart';
 import '../../models/meal_api_model.dart';
 import '../../providers/meal_api_provider.dart';
 
+import '../../providers/auth_provider.dart';
+import '../../providers/favorite_provider.dart';
+
 class MealDetailScreen extends StatefulWidget {
   final String mealId;
 
@@ -218,12 +221,36 @@ class _MealDetailContent extends StatelessWidget {
                 CustomButton(
                   text: 'Save to Favorites',
                   backgroundColor: AppColors.accentOrange,
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Favorites will be connected in the next milestone.',
+                  onPressed: () async {
+                    final userId = context.read<AppAuthProvider>().firebaseUser?.uid;
+
+                    if (userId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please login first.'),
+                          backgroundColor: AppColors.errorRed,
                         ),
+                      );
+                      return;
+                    }
+
+                    final success = await context.read<FavoriteProvider>().saveFavorite(
+                      userId: userId,
+                      meal: meal,
+                    );
+
+                    if (!context.mounted) return;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Saved to favorites.'
+                              : context.read<FavoriteProvider>().errorMessage ??
+                              'Unable to save favorite.',
+                        ),
+                        backgroundColor:
+                        success ? AppColors.primaryGreen : AppColors.errorRed,
                       ),
                     );
                   },
