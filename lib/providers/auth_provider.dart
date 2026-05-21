@@ -121,6 +121,37 @@ class AppAuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> updateName(String name) async {
+    final user = firebaseUser;
+
+    if (user == null) {
+      _errorMessage = 'User not found.';
+      notifyListeners();
+      return false;
+    }
+
+    _setLoading(true);
+
+    try {
+      await user.updateDisplayName(name.trim());
+
+      await userService.updateUserName(
+        uid: user.uid,
+        name: name,
+      );
+
+      _appUser = await userService.getUserProfile(user.uid);
+      _errorMessage = null;
+      _setLoading(false);
+
+      return true;
+    } catch (error) {
+      _errorMessage = 'Unable to update profile. Please try again.';
+      _setLoading(false);
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     await authService.logout();
     _firebaseUser = null;

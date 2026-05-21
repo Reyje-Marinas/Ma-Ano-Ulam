@@ -7,10 +7,11 @@ import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/loading_widget.dart';
 import '../../models/meal_api_model.dart';
-import '../../providers/meal_api_provider.dart';
-
+import '../../models/meal_plan_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/favorite_provider.dart';
+import '../../providers/meal_api_provider.dart';
+import '../../providers/meal_plan_provider.dart';
 
 class MealDetailScreen extends StatefulWidget {
   final String mealId;
@@ -32,17 +33,6 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     Future.microtask(() {
       context.read<MealApiProvider>().getMealDetails(widget.mealId);
     });
-  }
-
-  @override
-  void dispose() {
-    Future.microtask(() {
-      if (mounted) {
-        context.read<MealApiProvider>().clearSelectedMeal();
-      }
-    });
-
-    super.dispose();
   }
 
   @override
@@ -94,6 +84,71 @@ class _MealDetailContent extends StatelessWidget {
     required this.meal,
   });
 
+  Future<void> _saveToFavorites(BuildContext context) async {
+    final userId = context.read<AppAuthProvider>().firebaseUser?.uid;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please login first.'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+      return;
+    }
+
+    final success = await context.read<FavoriteProvider>().saveFavorite(
+      userId: userId,
+      meal: meal,
+    );
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Saved to favorites.'
+              : context.read<FavoriteProvider>().errorMessage ??
+              'Unable to save favorite.',
+        ),
+        backgroundColor:
+        success ? AppColors.primaryGreen : AppColors.errorRed,
+      ),
+    );
+  }
+
+  void _showAddToPlanSheet(BuildContext context) {
+    final userId = context.read<AppAuthProvider>().firebaseUser?.uid;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please login first.'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(28),
+        ),
+      ),
+      builder: (context) {
+        return _AddToPlanSheet(
+          userId: userId,
+          meal: meal,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
@@ -131,15 +186,7 @@ class _MealDetailContent extends StatelessWidget {
           ),
           actions: [
             IconButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Favorites will be connected in the next milestone.',
-                    ),
-                  ),
-                );
-              },
+              onPressed: () => _saveToFavorites(context),
               icon: const Icon(
                 Icons.favorite_border,
                 color: AppColors.accentOrange,
@@ -221,58 +268,203 @@ class _MealDetailContent extends StatelessWidget {
                 CustomButton(
                   text: 'Save to Favorites',
                   backgroundColor: AppColors.accentOrange,
-                  onPressed: () async {
-                    final userId = context.read<AppAuthProvider>().firebaseUser?.uid;
-
-                    if (userId == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please login first.'),
-                          backgroundColor: AppColors.errorRed,
-                        ),
-                      );
-                      return;
-                    }
-
-                    final success = await context.read<FavoriteProvider>().saveFavorite(
-                      userId: userId,
-                      meal: meal,
-                    );
-
-                    if (!context.mounted) return;
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          success
-                              ? 'Saved to favorites.'
-                              : context.read<FavoriteProvider>().errorMessage ??
-                              'Unable to save favorite.',
-                        ),
-                        backgroundColor:
-                        success ? AppColors.primaryGreen : AppColors.errorRed,
-                      ),
-                    );
-                  },
+                  onPressed: () => _saveToFavorites(context),
                 ),
                 const SizedBox(height: 14),
                 CustomButton(
                   text: 'Add to Weekly Plan',
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Meal planner will be connected after favorites.',
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: () => _showAddToPlanSheet(context),
                 ),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AddToPlanSheet extends StatefulWidget {
+  final String userId;
+  final MealApiModel meal;
+
+  const _AddToPlanSheet({
+    required this.userId,
+    required this.meal,
+  });
+
+  @override
+  State<_AddToPlanSheet> createState() => _AddToPlanSheetState();
+}
+
+class _AddToPlanSheetState extends State<_AddToPlanSheet> {
+  int? _selectedDayIndex;
+  String _selectedSlot = 'Breakfast';
+
+  final List<String> _slots = const [
+    'Breakfast',
+    'Lunch',
+    'Dinner',
+  ];
+
+  Future<void> _addToPlan() async {
+    final provider = context.read<MealPlanProvider>();
+
+    final success = await provider.addMealToExistingPlan(
+      userId: widget.userId,
+      dayIndex: _selectedDayIndex ?? 0,
+      slot: _selectedSlot,
+      meal: widget.meal,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Meal added to weekly plan.'
+              : provider.errorMessage ?? 'Unable to add meal to plan.',
+        ),
+        backgroundColor:
+        success ? AppColors.primaryGreen : AppColors.errorRed,
+      ),
+    );
+
+    if (success) {
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<MealPlanModel?>(
+      stream: context.read<MealPlanProvider>().getMealPlanStream(widget.userId),
+      builder: (context, snapshot) {
+        final plan = snapshot.data;
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryGreen,
+              ),
+            ),
+          );
+        }
+
+        if (plan == null || plan.days.isEmpty) {
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              24,
+              24,
+              24,
+              MediaQuery.of(context).viewInsets.bottom + 32,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.calendar_month_outlined,
+                  size: 58,
+                  color: AppColors.primaryGreen,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No weekly plan yet',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Generate a weekly plan first before adding meals manually.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.textGray,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                CustomButton(
+                  text: 'Close',
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            MediaQuery.of(context).viewInsets.bottom + 32,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Add to Weekly Plan',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 22),
+              DropdownButtonFormField<int>(
+                value: _selectedDayIndex ?? 0,
+                decoration: const InputDecoration(
+                  labelText: 'Select Day',
+                ),
+                items: List.generate(plan.days.length, (index) {
+                  final day = plan.days[index];
+
+                  return DropdownMenuItem(
+                    value: index,
+                    child: Text(day.dayName),
+                  );
+                }),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedDayIndex = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 18),
+              DropdownButtonFormField<String>(
+                value: _selectedSlot,
+                decoration: const InputDecoration(
+                  labelText: 'Meal Slot',
+                ),
+                items: _slots.map((slot) {
+                  return DropdownMenuItem(
+                    value: slot,
+                    child: Text(slot),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+
+                  setState(() {
+                    _selectedSlot = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
+              CustomButton(
+                text: 'Add to Plan',
+                isLoading: context.watch<MealPlanProvider>().isLoading,
+                onPressed: _addToPlan,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

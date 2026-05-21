@@ -97,6 +97,14 @@ class FavoriteProvider extends ChangeNotifier {
     }
   }
 
+  Future<int> getFavoritesCount(String userId) async {
+    try {
+      return await favoriteService.getUserFavoritesCount(userId);
+    } catch (_) {
+      return 0;
+    }
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();

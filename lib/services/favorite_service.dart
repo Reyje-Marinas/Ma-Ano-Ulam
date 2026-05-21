@@ -64,4 +64,12 @@ class FavoriteService {
 
     return document.exists;
   }
+
+  Future<int> getUserFavoritesCount(String userId) async {
+    final snapshot = await _favoritesCollection
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    return snapshot.docs.length;
+  }
 }

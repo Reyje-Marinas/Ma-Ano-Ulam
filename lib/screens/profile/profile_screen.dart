@@ -3,7 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
+import '../../core/utils/validators.dart';
+import '../../core/widgets/custom_button.dart';
+import '../../core/widgets/custom_text_field.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/favorite_provider.dart';
+import '../../providers/meal_plan_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -57,6 +62,22 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  void _showEditProfileSheet(BuildContext context, String currentName) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(28),
+        ),
+      ),
+      builder: (context) {
+        return _EditProfileSheet(currentName: currentName);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AppAuthProvider>();
@@ -65,6 +86,7 @@ class ProfileScreen extends StatelessWidget {
 
     final name = appUser?.name ?? firebaseUser?.displayName ?? 'MealMate User';
     final email = appUser?.email ?? firebaseUser?.email ?? 'No email';
+    final userId = firebaseUser?.uid;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -101,17 +123,34 @@ class ProfileScreen extends StatelessWidget {
                 color: AppColors.textGray,
               ),
             ),
-            const SizedBox(height: 36),
+            const SizedBox(height: 30),
+            if (userId != null) _StatsSection(userId: userId),
+            const SizedBox(height: 30),
             _ProfileOption(
               icon: Icons.edit_outlined,
               title: 'Edit Profile',
-              onTap: () {},
+              onTap: () => _showEditProfileSheet(context, name),
             ),
             const SizedBox(height: 14),
             _ProfileOption(
               icon: Icons.info_outline,
               title: 'About MealMate',
-              onTap: () {},
+              onTap: () {
+                showAboutDialog(
+                  context: context,
+                  applicationName: 'MealMate',
+                  applicationVersion: '1.0.0',
+                  applicationIcon: const Text(
+                    '🥗',
+                    style: TextStyle(fontSize: 32),
+                  ),
+                  children: const [
+                    Text(
+                      'MealMate helps users discover meals, save favorites, and generate weekly meal plans.',
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 14),
             _ProfileOption(
@@ -122,6 +161,88 @@ class ProfileScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StatsSection extends StatelessWidget {
+  final String userId;
+
+  const _StatsSection({
+    required this.userId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: FutureBuilder<int>(
+            future: context.read<FavoriteProvider>().getFavoritesCount(userId),
+            builder: (context, snapshot) {
+              return _StatCard(
+                value: snapshot.data?.toString() ?? '0',
+                label: 'Favorite Meals',
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: FutureBuilder<int>(
+            future: context.read<MealPlanProvider>().getMealPlanCount(userId),
+            builder: (context, snapshot) {
+              return _StatCard(
+                value: snapshot.data?.toString() ?? '0',
+                label: 'Saved Plans',
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _StatCard({
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 92,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textGray,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -168,5 +289,104 @@ class _ProfileOption extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _EditProfileSheet extends StatefulWidget {
+  final String currentName;
+
+  const _EditProfileSheet({
+    required this.currentName,
+  });
+
+  @override
+  State<_EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends State<_EditProfileSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.currentName);
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final authProvider = context.read<AppAuthProvider>();
+
+    final success = await authProvider.updateName(_nameController.text);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Profile updated successfully.'
+              : authProvider.errorMessage ?? 'Unable to update profile.',
+        ),
+        backgroundColor:
+        success ? AppColors.primaryGreen : AppColors.errorRed,
+      ),
+    );
+
+    if (success) {
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AppAuthProvider>();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Edit Profile',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 24),
+            CustomTextField(
+              controller: _nameController,
+              labelText: 'Full Name',
+              prefixIcon: Icons.person_outline,
+              validator: (value) {
+                return Validators.requiredField(value, 'full name');
+              },
+            ),
+            const SizedBox(height: 24),
+            CustomButton(
+              text: 'Save Changes',
+              isLoading: authProvider.isLoading,
+              onPressed: _save,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 }
