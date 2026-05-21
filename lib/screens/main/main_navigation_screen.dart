@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../discover/discover_meals_screen.dart';
 import '../favorites/favorites_screen.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
@@ -17,14 +18,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    PlaceholderScreen(
-      title: 'Discover Meals',
-      subtitle: 'MealDB API integration will be added next.',
-      icon: Icons.search,
-    ),
+    DiscoverMealsScreen(),
     PlaceholderScreen(
       title: 'Planner',
-      subtitle: 'Weekly meal planner will be added after meal API.',
+      subtitle: 'Weekly meal planner will be added after favorites.',
       icon: Icons.calendar_month_outlined,
     ),
     FavoritesScreen(),

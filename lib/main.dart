@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import 'app.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/meal_api_provider.dart';
 import 'services/auth_service.dart';
+import 'services/meal_api_service.dart';
 import 'services/user_service.dart';
 
 void main() async {
@@ -22,6 +24,11 @@ void main() async {
           create: (_) => AppAuthProvider(
             authService: AuthService(),
             userService: UserService(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => MealApiProvider(
+            mealApiService: MealApiService(),
           ),
         ),
       ],
