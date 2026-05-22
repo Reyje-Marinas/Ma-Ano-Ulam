@@ -10,6 +10,7 @@ import '../../providers/meal_api_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../discover/meal_detail_screen.dart';
 import '../planner/generate_plan_screen.dart';
+import '../profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ValueChanged<int>? onNavigate;
@@ -92,6 +93,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ProfileScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AppAuthProvider>();
@@ -109,17 +119,39 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 12),
-            Text(
-              'Hello, $firstName 👋',
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Ma! Ano ulam, $firstName? 👋',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: _openProfile,
+                  borderRadius: BorderRadius.circular(50),
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.lightGreen,
+                    child: Text(
+                      firstName[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.darkGreen,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             const Text(
-              'What would you like to eat today?',
+              'Plan meals and manage cooking tasks.',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textGray,
@@ -144,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             const SizedBox(height: 30),
             const Text(
-              'Quick Actions',
+              'Quick Tools',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -157,31 +189,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: _QuickActionCard(
                     icon: Icons.calendar_month_outlined,
-                    label: 'Generate',
+                    label: 'Plan',
                     onTap: _openGeneratePlan,
                   ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: _QuickActionCard(
-                    icon: Icons.search_outlined,
-                    label: 'Discover',
-                    onTap: () => widget.onNavigate?.call(1),
+                    icon: Icons.favorite_border,
+                    label: 'Saved',
+                    onTap: () => widget.onNavigate?.call(3),
                   ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: _QuickActionCard(
-                    icon: Icons.favorite_border,
-                    label: 'Favorites',
-                    onTap: () => widget.onNavigate?.call(3),
+                    icon: Icons.timer_outlined,
+                    label: 'Timers',
+                    onTap: () => widget.onNavigate?.call(4),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 30),
             const Text(
-              'Recommended Meal',
+              'Random Ulam Suggestion',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -230,7 +262,7 @@ class _TodayPlanCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Today’s Meal Plan',
+            'Today’s Cooking Plan',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,

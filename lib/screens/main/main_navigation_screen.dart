@@ -5,7 +5,7 @@ import '../discover/discover_meals_screen.dart';
 import '../favorites/favorites_screen.dart';
 import '../home/home_screen.dart';
 import '../planner/weekly_plan_screen.dart';
-import '../profile/profile_screen.dart';
+import '../timers/timers_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -30,7 +30,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       const DiscoverMealsScreen(),
       const WeeklyPlanScreen(),
       const FavoritesScreen(),
-      const ProfileScreen(),
+      const TimersScreen(),
     ];
 
     return Scaffold(
@@ -54,17 +54,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
-            label: 'Planner',
+            label: 'Plan',
           ),
           NavigationDestination(
             icon: Icon(Icons.favorite_border),
             selectedIcon: Icon(Icons.favorite),
-            label: 'Favorites',
+            label: 'Saved',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: Icon(Icons.timer_outlined),
+            selectedIcon: Icon(Icons.timer),
+            label: 'Timers',
           ),
         ],
       ),

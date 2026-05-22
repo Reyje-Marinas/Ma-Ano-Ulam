@@ -61,7 +61,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 28),
             const Text(
-              'MealMate',
+              'Ma! Ano Ulam?',
               style: TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.w800,
@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Plan smarter. Eat better.',
+              'Plan. Cook. Enjoy.',
               style: TextStyle(
                 fontSize: 15,
                 color: Colors.white,
