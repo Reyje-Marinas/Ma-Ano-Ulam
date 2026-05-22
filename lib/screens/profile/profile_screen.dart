@@ -7,11 +7,17 @@ import '../../core/utils/validators.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_text_field.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/cooking_timer_provider.dart';
 import '../../providers/favorite_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final ValueChanged<int>? onNavigate;
+
+  const ProfileScreen({
+    super.key,
+    this.onNavigate,
+  });
 
   String _getInitial(String? nameOrEmail) {
     if (nameOrEmail == null || nameOrEmail.trim().isEmpty) {
@@ -84,82 +90,98 @@ class ProfileScreen extends StatelessWidget {
     final firebaseUser = authProvider.firebaseUser;
     final appUser = authProvider.appUser;
 
-    final name = appUser?.name ?? firebaseUser?.displayName ?? 'MealMate User';
+    final name = appUser?.name ?? firebaseUser?.displayName ?? 'Ma! Ano Ulam User';
     final email = appUser?.email ?? firebaseUser?.email ?? 'No email';
     final userId = firebaseUser?.uid;
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const SizedBox(height: 40),
-            CircleAvatar(
-              radius: 52,
-              backgroundColor: AppColors.lightGreen,
-              child: Text(
-                _getInitial(name),
-                style: const TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.darkGreen,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profile'),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              CircleAvatar(
+                radius: 52,
+                backgroundColor: AppColors.lightGreen,
+                child: Text(
+                  _getInitial(name),
+                  style: const TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.darkGreen,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 22),
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
+              const SizedBox(height: 22),
+              Text(
+                name,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              email,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textGray,
+              const SizedBox(height: 6),
+              Text(
+                email,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textGray,
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
-            if (userId != null) _StatsSection(userId: userId),
-            const SizedBox(height: 30),
-            _ProfileOption(
-              icon: Icons.edit_outlined,
-              title: 'Edit Profile',
-              onTap: () => _showEditProfileSheet(context, name),
-            ),
-            const SizedBox(height: 14),
-            _ProfileOption(
-              icon: Icons.info_outline,
-              title: 'About MealMate',
-              onTap: () {
-                showAboutDialog(
-                  context: context,
-                  applicationName: 'MealMate',
-                  applicationVersion: '1.0.0',
-                  applicationIcon: const Text(
-                    '🥗',
-                    style: TextStyle(fontSize: 32),
-                  ),
-                  children: const [
-                    Text(
-                      'MealMate helps users discover meals, save favorites, and generate weekly meal plans.',
+              const SizedBox(height: 30),
+              if (userId != null) _StatsSection(userId: userId),
+              const SizedBox(height: 30),
+              _ProfileOption(
+                icon: Icons.edit_outlined,
+                title: 'Edit Profile',
+                onTap: () => _showEditProfileSheet(context, name),
+              ),
+              const SizedBox(height: 14),
+              _ProfileOption(
+                icon: Icons.favorite_border,
+                title: 'Saved Meals',
+                onTap: () {
+                  onNavigate?.call(3);
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 14),
+              _ProfileOption(
+                icon: Icons.info_outline,
+                title: 'About Ma! Ano Ulam?',
+                onTap: () {
+                  showAboutDialog(
+                    context: context,
+                    applicationName: 'Ma! Ano Ulam?',
+                    applicationVersion: '1.0.0',
+                    applicationIcon: const Text(
+                      '🍲',
+                      style: TextStyle(fontSize: 32),
                     ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 14),
-            _ProfileOption(
-              icon: Icons.logout,
-              title: 'Logout',
-              iconColor: AppColors.errorRed,
-              onTap: () => _logout(context),
-            ),
-          ],
+                    children: const [
+                      Text(
+                        'Ma! Ano Ulam? helps users discover recipes, save meals, track ingredients, create cooking timers, and organize weekly meal plans.',
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+              _ProfileOption(
+                icon: Icons.logout,
+                title: 'Logout',
+                iconColor: AppColors.errorRed,
+                onTap: () => _logout(context),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -183,19 +205,31 @@ class _StatsSection extends StatelessWidget {
             builder: (context, snapshot) {
               return _StatCard(
                 value: snapshot.data?.toString() ?? '0',
-                label: 'Favorite Meals',
+                label: 'Saved',
               );
             },
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 10),
         Expanded(
           child: FutureBuilder<int>(
             future: context.read<MealPlanProvider>().getMealPlanCount(userId),
             builder: (context, snapshot) {
               return _StatCard(
                 value: snapshot.data?.toString() ?? '0',
-                label: 'Saved Plans',
+                label: 'Plans',
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: FutureBuilder<int>(
+            future: context.read<CookingTimerProvider>().getTimerCount(userId),
+            builder: (context, snapshot) {
+              return _StatCard(
+                value: snapshot.data?.toString() ?? '0',
+                label: 'Timers',
               );
             },
           ),
@@ -221,6 +255,9 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.borderGray.withOpacity(0.5),
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

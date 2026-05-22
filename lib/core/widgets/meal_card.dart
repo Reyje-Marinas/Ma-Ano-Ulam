@@ -7,42 +7,41 @@ import '../constants/app_colors.dart';
 class MealCard extends StatelessWidget {
   final MealApiModel meal;
   final VoidCallback onTap;
-  final VoidCallback? onFavoriteTap;
-  final bool showFavoriteButton;
+  final VoidCallback onFavoriteTap;
 
   const MealCard({
     super.key,
     required this.meal,
     required this.onTap,
-    this.onFavoriteTap,
-    this.showFavoriteButton = true,
+    required this.onFavoriteTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.cardWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: AppColors.borderGray.withOpacity(0.5),
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(18),
             child: CachedNetworkImage(
               imageUrl: meal.imageUrl,
-              height: 96,
-              width: 96,
+              width: 104,
+              height: 104,
               fit: BoxFit.cover,
               placeholder: (context, url) {
                 return Container(
-                  height: 96,
-                  width: 96,
+                  width: 104,
+                  height: 104,
                   color: AppColors.lightOrange,
                   child: const Center(
                     child: CircularProgressIndicator(
@@ -54,8 +53,8 @@ class MealCard extends StatelessWidget {
               },
               errorWidget: (context, url, error) {
                 return Container(
-                  height: 96,
-                  width: 96,
+                  width: 104,
+                  height: 104,
                   color: AppColors.lightOrange,
                   child: const Icon(
                     Icons.restaurant,
@@ -66,11 +65,15 @@ class MealCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
+
           Expanded(
-            child: SizedBox(
-              height: 104,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: 104,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     meal.name,
@@ -80,6 +83,7 @@ class MealCard extends StatelessWidget {
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textDark,
+                      height: 1.2,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -92,9 +96,10 @@ class MealCard extends StatelessWidget {
                       color: AppColors.textGray,
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 12),
                   SizedBox(
-                    height: 38,
+                    height: 42,
+                    width: 140,
                     child: OutlinedButton(
                       onPressed: onTap,
                       style: OutlinedButton.styleFrom(
@@ -109,7 +114,7 @@ class MealCard extends StatelessWidget {
                       child: const Text(
                         'View Details',
                         style: TextStyle(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
@@ -118,16 +123,15 @@ class MealCard extends StatelessWidget {
               ),
             ),
           ),
-          if (showFavoriteButton) ...[
-            const SizedBox(width: 6),
-            IconButton(
-              onPressed: onFavoriteTap,
-              icon: const Icon(
-                Icons.favorite_border,
-                color: AppColors.accentOrange,
-              ),
+
+          const SizedBox(width: 6),
+          IconButton(
+            onPressed: onFavoriteTap,
+            icon: const Icon(
+              Icons.favorite_border,
+              color: AppColors.accentOrange,
             ),
-          ],
+          ),
         ],
       ),
     );

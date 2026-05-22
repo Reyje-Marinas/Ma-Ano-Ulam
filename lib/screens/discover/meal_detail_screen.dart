@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/empty_state_widget.dart';
+import '../../core/widgets/ingredient_checklist_widget.dart';
 import '../../core/widgets/loading_widget.dart';
 import '../../models/meal_api_model.dart';
 import '../../models/meal_plan_model.dart';
@@ -12,6 +13,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/favorite_provider.dart';
 import '../../providers/meal_api_provider.dart';
 import '../../providers/meal_plan_provider.dart';
+import '../cooking/cooking_mode_screen.dart';
+import '../planner/generate_plan_screen.dart';
 
 class MealDetailScreen extends StatefulWidget {
   final String mealId;
@@ -44,7 +47,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         builder: (context) {
           if (mealProvider.isLoading) {
             return const LoadingWidget(
-              message: 'Loading meal details...',
+              message: 'Loading recipe details...',
             );
           }
 
@@ -63,8 +66,8 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
           if (meal == null) {
             return EmptyStateWidget(
               icon: Icons.restaurant_outlined,
-              title: 'Meal not found',
-              subtitle: 'The selected meal could not be loaded.',
+              title: 'Recipe not found',
+              subtitle: 'The selected recipe could not be loaded.',
               buttonText: 'Go Back',
               onButtonPressed: () => Navigator.pop(context),
             );
@@ -108,9 +111,9 @@ class _MealDetailContent extends StatelessWidget {
       SnackBar(
         content: Text(
           success
-              ? 'Saved to favorites.'
+              ? 'Saved to saved meals.'
               : context.read<FavoriteProvider>().errorMessage ??
-              'Unable to save favorite.',
+              'Unable to save meal.',
         ),
         backgroundColor:
         success ? AppColors.primaryGreen : AppColors.errorRed,
@@ -140,17 +143,29 @@ class _MealDetailContent extends StatelessWidget {
           top: Radius.circular(28),
         ),
       ),
-      builder: (context) {
+      builder: (bottomSheetContext) {
         return _AddToPlanSheet(
           userId: userId,
           meal: meal,
+          parentContext: context,
         );
       },
     );
   }
 
+  void _openCookingMode(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CookingModeScreen(meal: meal),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final userId = context.watch<AppAuthProvider>().firebaseUser?.uid;
+
     return CustomScrollView(
       slivers: [
         SliverAppBar(
@@ -228,19 +243,13 @@ class _MealDetailContent extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 30),
-                const Text(
-                  'Ingredients',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textDark,
-                  ),
+                IngredientChecklistWidget(
+                  userId: userId,
+                  meal: meal,
                 ),
-                const SizedBox(height: 12),
-                _IngredientsCard(ingredients: meal.ingredients),
                 const SizedBox(height: 30),
                 const Text(
-                  'Instructions',
+                  'Cooking Procedure',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -266,7 +275,12 @@ class _MealDetailContent extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 CustomButton(
-                  text: 'Save to Favorites',
+                  text: 'Start Cooking Mode',
+                  onPressed: () => _openCookingMode(context),
+                ),
+                const SizedBox(height: 14),
+                CustomButton(
+                  text: 'Save Meal',
                   backgroundColor: AppColors.accentOrange,
                   onPressed: () => _saveToFavorites(context),
                 ),
@@ -287,10 +301,12 @@ class _MealDetailContent extends StatelessWidget {
 class _AddToPlanSheet extends StatefulWidget {
   final String userId;
   final MealApiModel meal;
+  final BuildContext parentContext;
 
   const _AddToPlanSheet({
     required this.userId,
     required this.meal,
+    required this.parentContext,
   });
 
   @override
@@ -306,6 +322,21 @@ class _AddToPlanSheetState extends State<_AddToPlanSheet> {
     'Lunch',
     'Dinner',
   ];
+
+  void _goToGeneratePlan() {
+    Navigator.pop(context);
+
+    Future.microtask(() {
+      if (!widget.parentContext.mounted) return;
+
+      Navigator.push(
+        widget.parentContext,
+        MaterialPageRoute(
+          builder: (context) => const GeneratePlanScreen(),
+        ),
+      );
+    });
+  }
 
   Future<void> _addToPlan() async {
     final provider = context.read<MealPlanProvider>();
@@ -387,9 +418,15 @@ class _AddToPlanSheetState extends State<_AddToPlanSheet> {
                     color: AppColors.textGray,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
+                CustomButton(
+                  text: 'Generate Weekly Plan',
+                  onPressed: _goToGeneratePlan,
+                ),
+                const SizedBox(height: 12),
                 CustomButton(
                   text: 'Close',
+                  backgroundColor: AppColors.textGray,
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -497,74 +534,6 @@ class _InfoChip extends StatelessWidget {
       ),
       backgroundColor: color.withOpacity(0.12),
       side: BorderSide.none,
-    );
-  }
-}
-
-class _IngredientsCard extends StatelessWidget {
-  final List<MealIngredient> ingredients;
-
-  const _IngredientsCard({
-    required this.ingredients,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (ingredients.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: const Text(
-          'No ingredients available.',
-          style: TextStyle(color: AppColors.textGray),
-        ),
-      );
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Column(
-        children: ingredients.map((ingredient) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.check_circle,
-                  color: AppColors.primaryGreen,
-                  size: 18,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    ingredient.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  ingredient.measure,
-                  style: const TextStyle(
-                    color: AppColors.textGray,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
     );
   }
 }

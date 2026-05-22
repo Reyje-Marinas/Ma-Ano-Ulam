@@ -40,53 +40,31 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryGreen,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              height: 130,
-              width: 130,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Text(
-                  '🥗',
-                  style: TextStyle(fontSize: 58),
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/friendly_meal_planner_splash_screen_design.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          const Positioned(
+            bottom: 58,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryGreen,
+                  strokeWidth: 2.8,
                 ),
               ),
             ),
-            const SizedBox(height: 28),
-            const Text(
-              'Ma! Ano Ulam?',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Plan. Cook. Enjoy.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 42),
-            const SizedBox(
-              width: 26,
-              height: 26,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2.6,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

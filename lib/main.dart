@@ -5,11 +5,13 @@ import 'package:provider/provider.dart';
 import 'app.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/cooking_timer_provider.dart';
 import 'providers/favorite_provider.dart';
 import 'providers/ingredient_checklist_provider.dart';
 import 'providers/meal_api_provider.dart';
 import 'providers/meal_plan_provider.dart';
 import 'services/auth_service.dart';
+import 'services/cooking_timer_service.dart';
 import 'services/favorite_service.dart';
 import 'services/ingredient_checklist_service.dart';
 import 'services/meal_api_service.dart';
@@ -51,6 +53,11 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => IngredientChecklistProvider(
             checklistService: IngredientChecklistService(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CookingTimerProvider(
+            cookingTimerService: CookingTimerService(),
           ),
         ),
       ],

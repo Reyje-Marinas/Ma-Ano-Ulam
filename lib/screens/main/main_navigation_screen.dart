@@ -27,10 +27,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     final screens = [
       HomeScreen(onNavigate: _onTap),
-      const DiscoverMealsScreen(),
-      const WeeklyPlanScreen(),
-      const FavoritesScreen(),
-      const TimersScreen(),
+      DiscoverMealsScreen(),
+      WeeklyPlanScreen(),
+      FavoritesScreen(),
+      TimersScreen(),
     ];
 
     return Scaffold(

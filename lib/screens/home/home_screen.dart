@@ -97,10 +97,13 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const ProfileScreen(),
+        builder: (context) => ProfileScreen(
+          onNavigate: widget.onNavigate,
+        ),
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

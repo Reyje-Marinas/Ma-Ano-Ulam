@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
 import '../../core/utils/validators.dart';
+import '../../core/widgets/app_logo.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_text_field.dart';
 import '../../providers/auth_provider.dart';
@@ -56,32 +57,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final authProvider = context.watch<AppAuthProvider>();
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(28),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 48),
+                const SizedBox(height: 24),
+
+                const AppLogo(
+                  size: 150,
+                  showCircleBackground: false,
+                ),
+
+                const SizedBox(height: 24),
+
                 const Text(
                   'Create Account',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
                   ),
                 ),
+
                 const SizedBox(height: 8),
+
                 const Text(
-                  'Start planning meals with MealMate',
+                  'Start planning meals with Ma! Ano Ulam?',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
                     color: AppColors.textGray,
                   ),
                 ),
-                const SizedBox(height: 36),
+
+                const SizedBox(height: 34),
+
                 CustomTextField(
                   controller: _nameController,
                   labelText: 'Full name',
@@ -91,7 +106,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                   textInputAction: TextInputAction.next,
                 ),
+
                 const SizedBox(height: 18),
+
                 CustomTextField(
                   controller: _emailController,
                   labelText: 'Email address',
@@ -100,7 +117,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: Validators.email,
                   textInputAction: TextInputAction.next,
                 ),
+
                 const SizedBox(height: 18),
+
                 CustomTextField(
                   controller: _passwordController,
                   labelText: 'Password',
@@ -121,7 +140,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                 ),
+
                 const SizedBox(height: 18),
+
                 CustomTextField(
                   controller: _confirmPasswordController,
                   labelText: 'Confirm password',
@@ -147,13 +168,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                 ),
+
                 const SizedBox(height: 30),
+
                 CustomButton(
                   text: 'Create Account',
                   isLoading: authProvider.isLoading,
                   onPressed: _register,
                 ),
+
                 const SizedBox(height: 28),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -178,6 +203,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 24),
               ],
             ),
           ),
