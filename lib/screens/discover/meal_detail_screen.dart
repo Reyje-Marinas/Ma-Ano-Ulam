@@ -43,6 +43,62 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     final mealProvider = context.watch<MealApiProvider>();
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Recipe Details'),
+        actions: [
+          Builder(
+            builder: (context) {
+              final meal = mealProvider.selectedMeal;
+
+              if (meal == null) {
+                return const SizedBox.shrink();
+              }
+
+              return IconButton(
+                onPressed: () async {
+                  final userId =
+                      context.read<AppAuthProvider>().firebaseUser?.uid;
+
+                  if (userId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please login first.'),
+                        backgroundColor: AppColors.errorRed,
+                      ),
+                    );
+                    return;
+                  }
+
+                  final success =
+                  await context.read<FavoriteProvider>().saveFavorite(
+                    userId: userId,
+                    meal: meal,
+                  );
+
+                  if (!context.mounted) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        success
+                            ? 'Saved to saved meals.'
+                            : context.read<FavoriteProvider>().errorMessage ??
+                            'Unable to save meal.',
+                      ),
+                      backgroundColor:
+                      success ? AppColors.primaryGreen : AppColors.errorRed,
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.favorite_border,
+                  color: AppColors.accentOrange,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: Builder(
         builder: (context) {
           if (mealProvider.isLoading) {
@@ -86,6 +142,71 @@ class _MealDetailContent extends StatelessWidget {
   const _MealDetailContent({
     required this.meal,
   });
+
+  List<String> _getInstructionSteps() {
+    final instructions = meal.instructions ?? '';
+
+    if (instructions.trim().isEmpty) {
+      return ['No cooking instructions available.'];
+    }
+
+    String cleanStepLabel(String text) {
+      var cleaned = text.trim();
+
+      cleaned = cleaned.replaceFirst(
+        RegExp(
+          r'^step\s*\d+\s*[:.)-]?',
+          caseSensitive: false,
+        ),
+        '',
+      );
+
+      cleaned = cleaned.replaceFirst(
+        RegExp(r'^\d+\s*[:.)-]?\s*'),
+        '',
+      );
+
+      return cleaned.trim();
+    }
+
+    final normalizedInstructions = instructions
+        .replaceAll('\r', '\n')
+        .replaceAll(
+      RegExp(
+        r'\bstep\s*\d+\s*[:.)-]?',
+        caseSensitive: false,
+      ),
+      '\n',
+    );
+
+    final lineSteps = normalizedInstructions
+        .split('\n')
+        .map(cleanStepLabel)
+        .where((step) => step.isNotEmpty)
+        .where(
+          (step) => !step.toLowerCase().startsWith('watch after ad'),
+    )
+        .toList();
+
+    if (lineSteps.length > 1) {
+      return lineSteps;
+    }
+
+    final sentenceSteps = normalizedInstructions
+        .split(RegExp(r'(?<=[.!?])\s+'))
+        .map(cleanStepLabel)
+        .where((step) => step.isNotEmpty)
+        .where(
+          (step) => !step.toLowerCase().startsWith('watch after ad'),
+    )
+        .toList();
+
+    if (sentenceSteps.isEmpty) {
+      return ['No cooking instructions available.'];
+    }
+
+    return sentenceSteps;
+  }
 
   Future<void> _saveToFavorites(BuildContext context) async {
     final userId = context.read<AppAuthProvider>().firebaseUser?.uid;
@@ -165,20 +286,109 @@ class _MealDetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userId = context.watch<AppAuthProvider>().firebaseUser?.uid;
+    final steps = _getInstructionSteps();
 
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          expandedHeight: 300,
-          pinned: true,
-          backgroundColor: AppColors.background,
-          foregroundColor: AppColors.textDark,
-          flexibleSpace: FlexibleSpaceBar(
-            background: CachedNetworkImage(
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        children: [
+          _MealHeaderCard(meal: meal),
+          const SizedBox(height: 24),
+
+          IngredientChecklistWidget(
+            userId: userId,
+            meal: meal,
+          ),
+
+          const SizedBox(height: 24),
+
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Cooking Procedure',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 42,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openCookingMode(context),
+                  icon: const Icon(Icons.restaurant_menu, size: 18),
+                  label: const Text('Cook'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryGreen,
+                    side: const BorderSide(
+                      color: AppColors.primaryGreen,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          ...List.generate(
+            steps.length,
+                (index) => _ProcedureStepCard(
+              stepNumber: index + 1,
+              instruction: steps[index],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          _ActionSection(
+            onStartCooking: () => _openCookingMode(context),
+            onSaveMeal: () => _saveToFavorites(context),
+            onAddToPlan: () => _showAddToPlanSheet(context),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MealHeaderCard extends StatelessWidget {
+  final MealApiModel meal;
+
+  const _MealHeaderCard({
+    required this.meal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: AppColors.borderGray.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(26),
+            ),
+            child: CachedNetworkImage(
               imageUrl: meal.imageUrl,
+              height: 220,
+              width: double.infinity,
               fit: BoxFit.cover,
               placeholder: (context, url) {
                 return Container(
+                  height: 220,
                   color: AppColors.lightOrange,
                   child: const Center(
                     child: CircularProgressIndicator(
@@ -189,29 +399,19 @@ class _MealDetailContent extends StatelessWidget {
               },
               errorWidget: (context, url, error) {
                 return Container(
+                  height: 220,
                   color: AppColors.lightOrange,
                   child: const Icon(
                     Icons.restaurant,
-                    size: 80,
+                    size: 70,
                     color: AppColors.accentOrange,
                   ),
                 );
               },
             ),
           ),
-          actions: [
-            IconButton(
-              onPressed: () => _saveToFavorites(context),
-              icon: const Icon(
-                Icons.favorite_border,
-                color: AppColors.accentOrange,
-              ),
-            ),
-          ],
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          Padding(
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -219,11 +419,11 @@ class _MealDetailContent extends StatelessWidget {
                   meal.name,
                   style: const TextStyle(
                     fontSize: 28,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                     color: AppColors.textDark,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
@@ -242,58 +442,108 @@ class _MealDetailContent extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 30),
-                IngredientChecklistWidget(
-                  userId: userId,
-                  meal: meal,
-                ),
-                const SizedBox(height: 30),
-                const Text(
-                  'Cooking Procedure',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Text(
-                    meal.instructions ?? 'No instructions available.',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.55,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                CustomButton(
-                  text: 'Start Cooking Mode',
-                  onPressed: () => _openCookingMode(context),
-                ),
-                const SizedBox(height: 14),
-                CustomButton(
-                  text: 'Save Meal',
-                  backgroundColor: AppColors.accentOrange,
-                  onPressed: () => _saveToFavorites(context),
-                ),
-                const SizedBox(height: 14),
-                CustomButton(
-                  text: 'Add to Weekly Plan',
-                  onPressed: () => _showAddToPlanSheet(context),
-                ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProcedureStepCard extends StatelessWidget {
+  final int stepNumber;
+  final String instruction;
+
+  const _ProcedureStepCard({
+    required this.stepNumber,
+    required this.instruction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.borderGray.withOpacity(0.5),
         ),
-      ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: AppColors.lightGreen,
+            child: Text(
+              '$stepNumber',
+              style: const TextStyle(
+                color: AppColors.darkGreen,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              instruction,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.55,
+                color: AppColors.textDark,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionSection extends StatelessWidget {
+  final VoidCallback onStartCooking;
+  final VoidCallback onSaveMeal;
+  final VoidCallback onAddToPlan;
+
+  const _ActionSection({
+    required this.onStartCooking,
+    required this.onSaveMeal,
+    required this.onAddToPlan,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.borderGray.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
+        children: [
+          CustomButton(
+            text: 'Start Cooking Mode',
+            onPressed: onStartCooking,
+          ),
+          const SizedBox(height: 12),
+          CustomButton(
+            text: 'Save Meal',
+            backgroundColor: AppColors.accentOrange,
+            onPressed: onSaveMeal,
+          ),
+          const SizedBox(height: 12),
+          CustomButton(
+            text: 'Add to Weekly Plan',
+            onPressed: onAddToPlan,
+          ),
+        ],
+      ),
     );
   }
 }

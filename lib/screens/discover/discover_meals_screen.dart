@@ -119,7 +119,7 @@ class _DiscoverMealsScreenState extends State<DiscoverMealsScreen> {
                     hintText: 'Search ulam, pasta, chicken...',
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: IconButton(
-                      icon: const Icon(Icons.tune),
+                      icon: const Icon(Icons.refresh),
                       onPressed: _searchMeals,
                     ),
                   ),
