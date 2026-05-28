@@ -200,16 +200,44 @@ class _DiscoverMealsScreenState extends State<DiscoverMealsScreen> {
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                  itemCount: mealProvider.meals.length,
-                  itemBuilder: (context, index) {
-                    final meal = mealProvider.meals[index];
+                final userId = context.read<AppAuthProvider>().firebaseUser?.uid;
 
-                    return MealCard(
-                      meal: meal,
-                      onTap: () => _openMealDetails(meal.id),
-                      onFavoriteTap: () => _saveMealToFavorites(meal),
+                if (userId == null) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                    itemCount: mealProvider.meals.length,
+                    itemBuilder: (context, index) {
+                      final meal = mealProvider.meals[index];
+
+                      return MealCard(
+                        meal: meal,
+                        isFavorite: false,
+                        onTap: () => _openMealDetails(meal.id),
+                        onFavoriteTap: () => _saveMealToFavorites(meal),
+                      );
+                    },
+                  );
+                }
+
+                return StreamBuilder<Set<String>>(
+                  stream: context.read<FavoriteProvider>().getFavoriteMealIdsStream(userId),
+                  builder: (context, favoriteSnapshot) {
+                    final favoriteMealIds = favoriteSnapshot.data ?? <String>{};
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                      itemCount: mealProvider.meals.length,
+                      itemBuilder: (context, index) {
+                        final meal = mealProvider.meals[index];
+                        final isFavorite = favoriteMealIds.contains(meal.id);
+
+                        return MealCard(
+                          meal: meal,
+                          isFavorite: isFavorite,
+                          onTap: () => _openMealDetails(meal.id),
+                          onFavoriteTap: () => _saveMealToFavorites(meal),
+                        );
+                      },
                     );
                   },
                 );

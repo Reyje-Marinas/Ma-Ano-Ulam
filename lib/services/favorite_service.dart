@@ -72,4 +72,16 @@ class FavoriteService {
 
     return snapshot.docs.length;
   }
+
+  Stream<Set<String>> getFavoriteMealIdsStream(String userId) {
+    return _favoritesCollection
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => doc.data()['mealId']?.toString() ?? '')
+          .where((mealId) => mealId.isNotEmpty)
+          .toSet();
+    });
+  }
 }

@@ -109,4 +109,8 @@ class FavoriteProvider extends ChangeNotifier {
     _isLoading = value;
     notifyListeners();
   }
+
+  Stream<Set<String>> getFavoriteMealIdsStream(String userId) {
+    return favoriteService.getFavoriteMealIdsStream(userId);
+  }
 }

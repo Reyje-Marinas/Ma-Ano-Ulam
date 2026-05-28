@@ -6,12 +6,14 @@ import '../constants/app_colors.dart';
 
 class MealCard extends StatelessWidget {
   final MealApiModel meal;
+  final bool isFavorite;
   final VoidCallback onTap;
   final VoidCallback onFavoriteTap;
 
   const MealCard({
     super.key,
     required this.meal,
+    required this.isFavorite,
     required this.onTap,
     required this.onFavoriteTap,
   });
@@ -65,7 +67,6 @@ class MealCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-
           Expanded(
             child: ConstrainedBox(
               constraints: const BoxConstraints(
@@ -123,13 +124,12 @@ class MealCard extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(width: 6),
           IconButton(
             onPressed: onFavoriteTap,
-            icon: const Icon(
-              Icons.favorite_border,
-              color: AppColors.accentOrange,
+            icon: Icon(
+              isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: isFavorite ? Colors.red : AppColors.accentOrange,
             ),
           ),
         ],
